@@ -1,6 +1,8 @@
 var prompt = require("prompt")
   , jade   = require("jade")
-  , fs     = require("fs");
+  , fs     = require("fs")
+  , os     = require("os")
+  , rest   = require("restler");
 
 module.exports = function(grunt) {
   var remote = grunt.option('remote') ? grunt.file.readJSON(grunt.option('remote')) : {};
@@ -135,6 +137,18 @@ module.exports = function(grunt) {
           stdout: true,
           stderr: true,
         }
+      },
+      rev: {
+        command: [
+          "git rev-parse HEAD"
+        ].join('&&'),
+        options: {
+          stdout: true,
+          stderr: true,
+          execOptions: {
+            cwd: "/usr/local/node/forkshop"
+          }
+        }
       }
     },
     concat: {
@@ -166,6 +180,17 @@ module.exports = function(grunt) {
   // assumes repo has already been cloned
   // git@github.com:coursefork/forkshop.git
   grunt.registerTask('pull', 'Pull latest updates to local repo', function() {
+
+    if (process.env.GROVE_NOTICE_KEY) {
+      rest.post('https://grove.io/api/notice/'+process.env.GROVE_NOTICE_KEY+'/', {
+        data: {
+            service: 'snarl'
+          , message: os.hostname() + ' began the deploy process...'
+          , url: 'http://forkable-ci.herokuapp.com/' // TODO: link to activity item...
+          , icon_url: 'https://i.imgur.com/wgOlRFh.png'
+        }
+      });
+    }
 
     // makes all the file manipulation stuff work without being fully qualified
     grunt.file.setBase(root);
@@ -200,6 +225,17 @@ module.exports = function(grunt) {
 
     // restart service
     grunt.task.run('shell:restart');
+
+    if (process.env.GROVE_NOTICE_KEY) {
+      rest.post('https://grove.io/api/notice/'+process.env.GROVE_NOTICE_KEY+'/', {
+        data: {
+            service: 'snarl'
+          , message: 'Deploy process completed.'
+          , url: 'http://forkable-ci.herokuapp.com/' // TODO: link to activity item...
+          , icon_url: 'https://i.imgur.com/wgOlRFh.png'
+        }
+      });
+    }
 
   });
 

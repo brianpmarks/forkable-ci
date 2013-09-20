@@ -22,7 +22,8 @@
     "grunt": "0.4.x",
     "grunt-ssh": "0.4.x",
     "grunt-shell": "0.2.x",
-    "prompt": "0.2.x"
+    "prompt": "0.2.x",
+    "restler": "~2.0.1"
   },
   "engines": {
     "node": ">= 0.8.x",
