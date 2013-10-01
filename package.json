@@ -24,7 +24,10 @@
     "grunt-shell": "0.2.x",
     "grunt-env": "0.4.x",
     "grunt-restful": "0.1.x",
-    "prompt": "0.2.x"
+    "prompt": "0.2.x",
+    "restler": "~2.0.1",
+    "underscore": "1.5.2",
+    "github": "~0.1.11"
   },
   "engines": {
     "node": ">= 0.8.x",
