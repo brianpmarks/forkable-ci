@@ -177,9 +177,9 @@ module.exports = function(grunt) {
         uri: '<%= grove_uri %>',
         destination: '/tmp/grunt-restler',
         data: {
-            service: 'snarl'
+            service: 'grobot'
           , message: '<%= grove_message %>'
-          , url: 'http://forkable-ci.herokuapp.com/' // TODO: link to activity item...
+          , url: 'https://forkable-ci.herokuapp.com/' // TODO: link to activity item...
           , icon_url: 'https://i.imgur.com/wgOlRFh.png'
         }
       }

@@ -1,0 +1,8 @@
+extends layout
+
+block content
+  h2 GitHub WebHooks
+  ul
+    for hook in hooks
+      li
+        pre #{JSON.stringify(hook)}

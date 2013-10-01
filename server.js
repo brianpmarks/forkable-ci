@@ -2,12 +2,16 @@
 var connection     = require("ssh2")
   , express        = require("express")
   , request        = require("request")
+  , rest           = require('restler')
   , app            = express()
   , mongoose       = require("mongoose")
   , passport       = require("passport")
   , GitHubStrategy = require("passport-github").Strategy
   , RedisStore     = require("connect-redis")(express)
-  , url            = require("url");
+  , url            = require("url")
+  , _              = require('underscore');
+
+var config = require('./config');
 
 // TODO: schema for currently deployed branch (rather than real-time check?)
 // schema for past test results?
@@ -61,21 +65,22 @@ passport.deserializeUser(function(user_id, done) {
 
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET
+    clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    scope: 'repo'
   }, function(accessToken, refreshToken, profile, done) {
     // create / update user
     models.User.findOne({ username : profile.username }, function(err, user) {
-      // may want to update some user fields...?
-      if (user) return done(null, user);
+      if (!user) {
+        var user = new models.User();
+      }
 
-      var cf_user = new models.User();
-      cf_user.username = profile.username;
-      cf_user.accessToken = accessToken;
-      cf_user.profileUrl = profile.profileUrl,
-      cf_user.github_id = profile.id;
+      user.username = profile.username;
+      user.accessToken = accessToken;
+      user.profileUrl = profile.profileUrl,
+      user.github_id = profile.id;
 
-      cf_user.save(function(err, cf_user) {
-        return done(null, cf_user);
+      user.save(function(err) {
+        return done(null, user);
       });
     });
   }
@@ -93,6 +98,108 @@ app.post('/github_webhook', function(req, res) {
     console.log("req.body = " + JSON.stringify(req.body));
 
     res.send("OK");
+});
+app.get('/hooks', requireLogin , function(req, res) {
+  console.log(req.user);
+
+  rest.get('https://api.github.com/repos/' + config.github.repo + '/hooks', {
+    headers: {
+      'Authorization': 'token ' + req.user.accessToken
+    }
+  }).on('complete', function(data) {
+    res.render('hooks', {
+      hooks: data
+    });
+  });
+});
+app.post('/hooks/init', requireLogin , function(req, res) {
+  rest.post('https://api.github.com/repos/' + config.github.repo + '/hooks', {
+      headers: {
+        'Authorization': 'token ' + req.user.accessToken
+      },
+      data: JSON.stringify({
+          name: 'web'
+        , events: ['pull_request']
+        , config: {
+            url: config.host + '/hooks/pull-request'
+          }
+      })
+    }).on('complete', function(data) {
+      res.send( data );
+    });
+});
+
+app.del('/hooks/:hookID', requireLogin , function(req, res) {
+  rest.del('https://api.github.com/repos/' + config.github.repo + '/hooks/' + req.param('hookID'), {
+      headers: {
+        'Authorization': 'token ' + req.user.accessToken
+      },
+  }).on('complete', function(data) {
+    console.log('da bleet ' +data);
+    res.send( data );
+  });
+});
+
+var handleHook = function(req, res) {
+
+  console.log(req.method);
+  console.log(req.path);
+  console.log(req.params);
+  console.log(req.body);
+
+
+
+  var done = function(data) {
+    res.send({
+        status: 'ok'
+      , data: data
+    });
+  }
+
+  switch (req.param('hookType')) {
+    case 'pull-request':
+      var pull = JSON.parse(req.body.payload);
+      switch (pull.action) {
+        default:
+          console.log('unhandled pull request action: ' + pull.action);
+          done();
+        break;
+        case 'opened':
+          rest.post('https://grove.io/api/notice/' + config.grove.keys.ops + '/', {
+            data: {
+                service: config.grove.bot.name
+              , icon_url: config.grove.bot.avatar
+              , message: '@'+pull.pull_request.user.login + ' wants a review of '+pull.pull_request.changed_files+' changed files in "'+pull.pull_request.title+'": '+pull.pull_request.html_url+' -- mergeability is '+pull.pull_request.mergeable_state+', but have at ye swashbuckling code pirates!'
+              , url: config.host
+            }
+          }).on('complete', done );
+        break;
+        case 'synchronize':
+          // TODO: debounce notifications of pushes here...
+          done();
+        break;
+      }
+    break;
+    default:
+      console.log('unhandled hook type "' + req.param('hookType') +'"');
+      done();
+    break;
+  }
+}
+app.get('/hooks/:hookType', handleHook);
+app.put('/hooks/:hookType', handleHook);
+app.post('/hooks/:hookType', handleHook);
+app.patch('/hooks/:hookType', handleHook);
+
+app.post('/hooks/:hookID/test', requireLogin , function(req, res) {
+  console.log('https://api.github.com/repos/' + config.github.repo + '/hooks/' + req.param('hookID') + '/tests')
+  rest.post('https://api.github.com/repos/' + config.github.repo + '/hooks/' + req.param('hookID') + '/tests', {
+      headers: {
+        'Authorization': 'token ' + req.user.accessToken
+      },
+  }).on('complete', function(data) {
+    res.send(data);
+  });
 });
 
 app.get('/auth/github', passport.authenticate('github'));
