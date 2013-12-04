@@ -68,7 +68,8 @@ module.exports = function(grunt) {
       restart: {
         command: [
           "forever restart coursefork.js",
-          "forever restart blog.js"
+          "forever restart blog.js",
+          "forever restart worker.js"
         ].join('&&'),
         options: {
           stdout: true,
