@@ -161,6 +161,10 @@ module.exports = function(grunt) {
         }
       }
     },
+    less: {
+      production: {
+      }
+    },
     uglify: {
       options: {
         mangle: false
@@ -193,6 +197,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-restful');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
+  grunt.loadNpmTasks('grunt-contrib-less');
 
   // -----------
   // Shell tasks
@@ -203,6 +208,7 @@ module.exports = function(grunt) {
       'env:config'
     , 'grove_starting'
     , 'exec_shell_pull'
+    , 'lessc'
     , 'css'
     , 'compile_jade'
     , 'javascript'
@@ -221,6 +227,20 @@ module.exports = function(grunt) {
   grunt.registerTask('exec_shell_pull', 'Run shell:pull', function() {
     // pull latest code
     grunt.task.run('shell:pull');
+  });
+
+  grunt.registerTask('lessc', 'Generate css file from less files', function() {
+    grunt.file.setBase(root);
+
+    // path to less files, path to css file
+    var css_path  = root + '/public/css/main.css';
+    var less_path = root + '/private/css/main.less';
+
+    var files_val = {};
+    files_val[css_path] = less_path;
+
+    grunt.config.set('less.production.files', files_val);
+    grunt.task.run('less');
   });
 
   grunt.registerTask('css', 'Prepare css for production', function() {
