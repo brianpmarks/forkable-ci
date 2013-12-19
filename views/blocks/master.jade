@@ -1,9 +1,10 @@
 div.row.pr
-  div.span6
-    a(href='https://github.com/coursefork/forkshop') master
+  each branch in ['master', 'staging', 'develop']
+    div.span6
+      a(href='https://github.com/coursefork/forkshop') #{branch}
 
-  div.offset1.span2
-    - if (prs[ "master" ] && prs[ "master" ].on_staging)
-      button.btn.btn-success On Staging
-    - else
-      button.btn(data-id='master') Checkout
+    div.offset1.span2
+      - if (prs[ branch ] && prs[ branch ].on_staging)
+        button.btn.btn-success On Staging
+      - else
+        button.btn(data-id='#{branch}') Checkout
