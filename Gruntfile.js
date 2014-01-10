@@ -5,6 +5,7 @@ var prompt = require("prompt")
 
 module.exports = function(grunt) {
   var remote = grunt.option('remote') ? grunt.file.readJSON(grunt.option('remote')) : {};
+  var user   = grunt.option('user') || '';
   var pk     = remote.privateKey ? grunt.file.read(remote.privateKey) : "";
 
   // forkshop root
@@ -22,7 +23,7 @@ module.exports = function(grunt) {
         }
       },
       status: {
-        command: "forever list",
+        command: "pm2 list",
         options: {
           host: remote.host,
           username: remote.username,
@@ -67,9 +68,7 @@ module.exports = function(grunt) {
       },
       restart: {
         command: [
-          "forever restart coursefork.js",
-          "forever restart blog.js",
-          "forever restart worker.js"
+          "pm2 restart all"
         ].join('&&'),
         options: {
           stdout: true,
@@ -479,8 +478,8 @@ function getPassphrase(grunt, task, done) {
   prompt.start();
 
   prompt.get(schema, function(err, result) {
-      grunt.config.set('passphrase', result.passphrase);
-      grunt.task.run(task);
-      done();
+    grunt.config.set('passphrase', result.passphrase);
+    grunt.task.run(task);
+    done();
   });
 }
